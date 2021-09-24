@@ -57,7 +57,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
                 reqinfo[1] = reqinfo[1]+ "/index.html"
                 status = "301 Moved Permanently"
             
-        script_dir = "/home/yiyang/Desktop/CMPUT404-assignment-webserver/www"
+        script_dir = "www"
         rel_path = reqinfo[1]
         abs_file_path = script_dir + rel_path
         ctype = reqinfo[1].rsplit('.',1)
@@ -65,30 +65,31 @@ class MyWebServer(socketserver.BaseRequestHandler):
         if len(ctype) > 1:
             ctype = ctype[1]
         else:
-            status = "404 Not FOUND!"
+            status = "404 Not FOUND"
+            
+        if "/../../../" in abs_file_path:
+            abs_file_path = "should_not_allow_to_view"
+            
         
         try:
             f = open (abs_file_path, "r")
         except FileNotFoundError:
-            status = "404 Not FOUND!"
-            
-            self.request.send(bytearray(reqinfo[2] + " " + status + "\r\n",'utf-8'))
-            if status == "301 Moved Permanently":
-                self.request.send(bytearray("Location: http://127.0.0.1:8080/" + origin,'utf-8'))
-            else:
-                self.request.send(bytearray(time.strftime("DATE: %a, %d %b %Y %I:%M:%S %p %Z\r\n", time.gmtime()),'utf-8'))
-                self.request.send(bytearray("Content-Length: " + str(length) + "\r\n",'utf-8'))
-                self.request.send(bytearray("Connection: close\r\n",'utf-8'))
-                self.request.send(bytearray("Content-Type: text/" +  ctype +"\r\n",'utf-8'))
-                self.request.send(bytearray("\r\n",'utf-8'))
+            if status != "405 Method Not Allowed":
+                status = "404 Not FOUND"
+            self.request.send(bytearray("HTTP/1.1 " + status + "\r\n",'utf-8'))
+            self.request.send(bytearray(time.strftime("DATE: %a, %d %b %Y %I:%M:%S %p %Z\r\n", time.gmtime()),'utf-8'))
+            self.request.send(bytearray("Content-Length: " + str(length) + "\r\n",'utf-8'))
+            self.request.send(bytearray("Connection: close\r\n",'utf-8'))
+            self.request.send(bytearray("Content-Type: text/" +  ctype +"\r\n",'utf-8'))
+            self.request.send(bytearray("\r\n",'utf-8'))
         else:
             
             l = f.read(1024)
             while (l):
                 length += len(l)
                 l = f.read(1024)
-	
-            self.request.send(bytearray(reqinfo[2] + " " + status + "\r\n",'utf-8'))
+                
+            self.request.send(bytearray("HTTP/1.1 " + status + "\r\n",'utf-8'))
             self.request.send(bytearray(time.strftime("DATE: %a, %d %b %Y %I:%M:%S %p %Z\r\n", time.gmtime()),'utf-8'))
             self.request.send(bytearray("Content-Length: " + str(length) + "\r\n",'utf-8'))
             self.request.send(bytearray("Connection: close\r\n",'utf-8'))
